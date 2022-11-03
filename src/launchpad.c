@@ -14,11 +14,12 @@
 #include "minotaur.h"
 #endif
 
-static void process_loop(struct launchpad_configuration*, struct device_drivers);
-static void start_cores(struct launchpad_configuration*, struct device_drivers);
-static bool are_all_cores_active(struct launchpad_configuration*);
-static void check_number_cores_on_device_and_active(struct launchpad_configuration*);
-static void transfer_executable_to_device(struct launchpad_configuration*, struct device_configuration, struct device_drivers);
+static void display_device_configuration(struct device_configuration*);
+static void process_loop(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
+static void start_cores(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
+static bool are_all_cores_active(struct launchpad_configuration*, struct device_configuration*);
+static void check_number_cores_on_device_and_active(struct launchpad_configuration*, struct device_configuration*);
+static void transfer_executable_to_device(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
 static void load_executable_file(struct launchpad_configuration*, char**, uint64_t*);
 static void check_device_status(LP_STATUS_CODE);
 
@@ -33,36 +34,61 @@ int main(int argc, char * argv[]) {
 
   if (config->reset) check_device_status(active_device_drivers.device_reset());
 
-  check_device_status(active_device_drivers.device_initialise());
-  check_device_status(active_device_drivers.device_get_configuration(&device_config));
-  config->total_cores_on_device=device_config.number_cores;
-  check_number_cores_on_device_and_active(config);
-  transfer_executable_to_device(config, device_config, active_device_drivers);
-  start_cores(config, active_device_drivers);
-  process_loop(config, active_device_drivers);
+  if (config->executable_filename != NULL || config->display_config) {
+    check_device_status(active_device_drivers.device_initialise());
+    check_device_status(active_device_drivers.device_get_configuration(&device_config));
+    if (config->display_config) display_device_configuration(&device_config);
+    if (config->executable_filename != NULL) {      
+      check_number_cores_on_device_and_active(config, &device_config);
+      transfer_executable_to_device(config, &device_config, &active_device_drivers);
+      start_cores(config, &device_config, &active_device_drivers);
+      process_loop(config, &device_config, &active_device_drivers);
+    }
+  }
   return 0;
 }
 
-static void process_loop(struct launchpad_configuration * config, struct device_drivers active_device_drivers) {
-  if (config->poll_uart) {
-    poll_for_uart_across_cores(config, active_device_drivers);
+static void display_device_configuration(struct device_configuration* device_config) {
+  printf("Device name: %s\n", device_config->name);
+  printf("Version: %x, revision %d\n", device_config->version, device_config->revision);
+  printf("Number of cores: %d\n", device_config->number_cores);
+  printf("Clock frequency: %dMHz\n", device_config->clock_frequency_mhz);
+  printf("PCIe control BAR window: %d\n", device_config->pcie_bar_ctrl_window_index);
+  printf("Memory configuration: %dMB instruction, %dMB data per core, %dKB shared data\n", device_config->instruction_space_size_mb, 
+    device_config->per_core_data_space_mb, device_config->shared_data_space_kb);
+    
+  bool ddr_inuse[2]={false, false};
+  for (int i=0;i<device_config->number_cores;i++) {
+    ddr_inuse[device_config->ddr_bank_mapping[i]]=true;
+  }
+  
+  printf("\nDDR bank 0 in use: %s, DDR bank 1 in use: %s\n", ddr_inuse[0] ? "yes" : "no", ddr_inuse[1] ? "yes" : "no");
+  
+  for (int i=0;i<device_config->number_cores;i++) {
+    printf("Core %d: DDR bank %d, base data address 0x%lx\n", i, device_config->ddr_bank_mapping[i], device_config->ddr_base_addr_mapping[i]);
   }
 }
 
-static void start_cores(struct launchpad_configuration * config, struct device_drivers active_device_drivers) {
-  if (1==2 && are_all_cores_active(config)) {
-    check_device_status(active_device_drivers.device_start_allcores());
+static void process_loop(struct launchpad_configuration * config, struct device_configuration* device_config, struct device_drivers * active_device_drivers) {
+  if (config->poll_uart) {
+    poll_for_uart_across_cores(config, device_config, active_device_drivers);
+  }
+}
+
+static void start_cores(struct launchpad_configuration * config, struct device_configuration * device_config, struct device_drivers * active_device_drivers) {
+  if (1==2 && are_all_cores_active(config, device_config)) {
+    check_device_status(active_device_drivers->device_start_allcores());
   } else {
-    for (int i=0;i<config->total_cores_on_device;i++) {
+    for (int i=0;i<device_config->number_cores;i++) {
       if (config->active_cores[i]) {
-        check_device_status(active_device_drivers.device_start_core(i));
+        check_device_status(active_device_drivers->device_start_core(i));
       }
     }
   }  
 }
 
-static bool are_all_cores_active(struct launchpad_configuration * config) {
-  for (int i=0;i<config->total_cores_on_device;i++) {
+static bool are_all_cores_active(struct launchpad_configuration * config, struct device_configuration * device_config) {
+  for (int i=0;i<device_config->number_cores;i++) {
     if (!config->active_cores[i]) {
       return false;
     }
@@ -70,45 +96,45 @@ static bool are_all_cores_active(struct launchpad_configuration * config) {
   return true;
 }
 
-static void check_number_cores_on_device_and_active(struct launchpad_configuration * config) {
+static void check_number_cores_on_device_and_active(struct launchpad_configuration * config, struct device_configuration * device_config) {
   if (config->all_cores_active) {
-    for (int i=0;i<config->total_cores_on_device;i++) {
+    for (int i=0;i<device_config->number_cores;i++) {
       config->active_cores[i]=true;
     }
   } else {
-    for (int i=config->total_cores_on_device;i<MAX_NUM_CORES;i++) {
+    for (int i=device_config->number_cores;i<MAX_NUM_CORES;i++) {
       if (config->active_cores[i]) {
-        fprintf(stderr, "Error, core %d configured to be active but the device only has %d cores\n", i, config->total_cores_on_device);
+        fprintf(stderr, "Error, core %d configured to be active but the device only has %d cores\n", i, device_config->number_cores);
         exit(-1);
       }
     }
     bool non_active=true;
-    for (int i=0;i<config->total_cores_on_device;i++) {
+    for (int i=0;i<device_config->number_cores;i++) {
       if (config->active_cores[i]) {
         non_active=false;
         break;
       }
     }
     if (non_active) {
-      fprintf(stderr, "Error, device has %d cores but none configured to be active\n", config->total_cores_on_device);
+      fprintf(stderr, "Error, device has %d cores but none configured to be active\n", device_config->number_cores);
       exit(-1);
     }
   }
 }
 
-static void transfer_executable_to_device(struct launchpad_configuration * config, struct device_configuration device_config, struct device_drivers active_device_drivers) {
+static void transfer_executable_to_device(struct launchpad_configuration * config, struct device_configuration * device_config, struct device_drivers * active_device_drivers) {
   char * executable_bytes;
   uint64_t code_size;
   load_executable_file(config, &executable_bytes, &code_size);
-  if (device_config.architecture_type == LP_ARCH_TYPE_SHARED_NOTHING || device_config.architecture_type == LP_ARCH_TYPE_SHARED_DATA_ONLY) {
-    for (int i=0;i<config->total_cores_on_device;i++) {
+  if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_NOTHING || device_config->architecture_type == LP_ARCH_TYPE_SHARED_DATA_ONLY) {
+    for (int i=0;i<device_config->number_cores;i++) {
       if (config->active_cores[i]) {
-        check_device_status(active_device_drivers.device_write_core_instructions(i, 0x0, executable_bytes, code_size));
+        check_device_status(active_device_drivers->device_write_core_instructions(i, 0x0, executable_bytes, code_size));
       }
     }
   } else {
     // Otherwise there is a shared instruction space    
-    check_device_status(active_device_drivers.device_write_instructions(0x0, executable_bytes, code_size));
+    check_device_status(active_device_drivers->device_write_instructions(0x0, executable_bytes, code_size));
   }
   free(executable_bytes);
 }

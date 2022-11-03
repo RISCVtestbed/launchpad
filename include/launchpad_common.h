@@ -11,12 +11,17 @@
 #define LP_ALREADY_RUNNING 3
 #define LP_ALREADY_STOPPED 4
 #define LP_NOT_IMPLEMENTED 5
+#define LP_UNKNOWN_CORE 6
 
 enum LP_DEVICE_ARCHITECTURE_TYPE {LP_ARCH_TYPE_SHARED_NOTHING, LP_ARCH_TYPE_SHARED_INSTR_ONLY, LP_ARCH_TYPE_SHARED_DATA_ONLY, LP_ARCH_TYPE_SHARED_EVERYTHING};
 
 struct device_configuration {
   char * name;
-  int number_cores;
+  int number_cores, clock_frequency_mhz, pcie_bar_ctrl_window_index, revision;
+  char version;
+  int * ddr_bank_mapping;
+  uint64_t * ddr_base_addr_mapping;
+  unsigned int instruction_space_size_mb, per_core_data_space_mb, shared_data_space_kb;  
   enum LP_DEVICE_ARCHITECTURE_TYPE architecture_type;
 };
 

@@ -20,8 +20,8 @@ struct launchpad_configuration* readConfiguration(int argc, char *argv[]) {
   configuration->executable_filename=NULL;
   configuration->poll_uart=false;
   configuration->reset=false;
+  configuration->display_config=false;
   configuration->all_cores_active=false;
-  configuration->total_cores_on_device=-1;
   for (int i=0;i<MAX_NUM_CORES;i++) configuration->active_cores[i]=false;  
   parseCommandLineArguments(configuration, argc, argv);
   return configuration;
@@ -46,6 +46,8 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
         configuration->poll_uart=true;
       } else if (areStringsEqualIgnoreCase(argv[i], "-reset")) {
         configuration->reset=true;
+      } else if (areStringsEqualIgnoreCase(argv[i], "-config")) {
+        configuration->display_config=true;
       } else if (areStringsEqualIgnoreCase(argv[i], "-c")) {
         if (i+1 ==argc) {
           fprintf(stderr, "When specifying active cores you must provide arguments\n");
@@ -55,8 +57,8 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
         }
       }
     }
-    if (configuration->executable_filename == NULL) {
-      fprintf(stderr, "You must supply an executable file to run as an argument, see -h for details\n");
+    if (configuration->executable_filename == NULL && !configuration->reset && !configuration->display_config) {
+      fprintf(stderr, "You must supply an executable file, reset flag or display config flag, see -h for details\n");
       exit(0);
     }
     if (!configuration->all_cores_active) {
@@ -128,6 +130,7 @@ static void displayHelp() {
   printf("-c list        Specify active cores; can be a single id, all, a range (a:b) or a list (a,b,c,d)\n");  
   printf("-uart          Poll UART for output after starting code on core(s)\n");
   printf("-reset         Reset device\n");
+  printf("-config        Display configuration information\n");
   printf("-help          Display this help and quit\n");
 }
 
