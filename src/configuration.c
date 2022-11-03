@@ -61,6 +61,9 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
       fprintf(stderr, "You must supply an executable file, reset flag or display config flag, see -h for details\n");
       exit(0);
     }
+    if (configuration->executable_filename != NULL && !configuration->poll_uart) {
+      printf("Warning: You have not enabled UART with -uart flag, so executable will run but no output will be generated\n");
+    }
     if (!configuration->all_cores_active) {
       bool none_active=true;
       for (int i=0;i<MAX_NUM_CORES;i++) {
