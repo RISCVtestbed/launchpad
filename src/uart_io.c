@@ -56,7 +56,7 @@ static void poll_core_for_uart(int core_id, struct device_drivers * active_devic
         if (data == '\n') {
           // This is a flush
           output_buffers[core_id][output_buffer_locals[core_id]]='\0';    
-          printf("%s", output_buffers[core_id]);
+          printf("[%d]: %s", core_id, output_buffers[core_id]);
           output_buffers[core_id][0]='\0';
           output_buffer_locals[core_id]=0;
         }
