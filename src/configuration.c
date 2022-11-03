@@ -16,13 +16,13 @@ static void displayHelp(void);
  */
 struct launchpad_configuration* readConfiguration(int argc, char *argv[]) {
   int i;
-  struct launchpad_configuration* configuration=(struct launchpad_configuration*) malloc(sizeof(struct launchpad_configuration));  
+  struct launchpad_configuration* configuration=(struct launchpad_configuration*) malloc(sizeof(struct launchpad_configuration));
   configuration->executable_filename=NULL;
   configuration->poll_uart=false;
   configuration->reset=false;
   configuration->display_config=false;
   configuration->all_cores_active=false;
-  for (int i=0;i<MAX_NUM_CORES;i++) configuration->active_cores[i]=false;  
+  for (int i=0;i<MAX_NUM_CORES;i++) configuration->active_cores[i]=false;
   parseCommandLineArguments(configuration, argc, argv);
   return configuration;
 }
@@ -34,14 +34,14 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
   if (argc == 1) {
     displayHelp();
     exit(0);
-  } else { 
+  } else {
     int i;
     for (i=1;i<argc;i++) {
       if (areStringsEqualIgnoreCase(argv[i], "-bin") || areStringsEqualIgnoreCase(argv[i], "-exe")) {
-        configuration->executable_filename=argv[++i];      
+        configuration->executable_filename=argv[++i];
       } else if (areStringsEqualIgnoreCase(argv[i], "-help")) {
         displayHelp();
-        exit(0);      
+        exit(0);
       } else if (areStringsEqualIgnoreCase(argv[i], "-uart")) {
         configuration->poll_uart=true;
       } else if (areStringsEqualIgnoreCase(argv[i], "-reset")) {
@@ -52,7 +52,7 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
         if (i+1 ==argc) {
           fprintf(stderr, "When specifying active cores you must provide arguments\n");
           exit(0);
-        } else {          
+        } else {
           parseCoreActiveInfo(configuration, argv[++i]);
         }
       }
@@ -86,7 +86,7 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
  */
 static void parseCoreActiveInfo(struct launchpad_configuration* configuration, char * info) {
   int i;
-  if (areStringsEqualIgnoreCase(info, "all")) {    
+  if (areStringsEqualIgnoreCase(info, "all")) {
     configuration->all_cores_active=true;
   } else {
     if (strchr(info, ',') != NULL) {
@@ -130,7 +130,7 @@ static void displayHelp() {
   printf("Launchpad version %s\n", VERSION_IDENT);
   printf("launchpad [arguments]\n\nArguments\n--------\n");
   printf("-bin/-exe arg  Provides the binary executable file to be loaded and executed\n");
-  printf("-c list        Specify active cores; can be a single id, all, a range (a:b) or a list (a,b,c,d)\n");  
+  printf("-c list        Specify active cores; can be a single id, all, a range (a:b) or a list (a,b,c,d)\n");
   printf("-uart          Poll UART for output after starting code on core(s)\n");
   printf("-reset         Reset device\n");
   printf("-config        Display configuration information\n");

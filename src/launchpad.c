@@ -27,7 +27,7 @@ int main(int argc, char * argv[]) {
   struct launchpad_configuration * config=readConfiguration(argc, argv);
   struct device_drivers active_device_drivers;
   struct device_configuration device_config;
-  
+
 #ifdef MINOTAUR_SUPPORT
   active_device_drivers=setup_minotaur_device_drivers();
 #endif
@@ -38,7 +38,7 @@ int main(int argc, char * argv[]) {
     check_device_status(active_device_drivers.device_initialise());
     check_device_status(active_device_drivers.device_get_configuration(&device_config));
     if (config->display_config) display_device_configuration(&device_config);
-    if (config->executable_filename != NULL) {      
+    if (config->executable_filename != NULL) {
       check_number_cores_on_device_and_active(config, &device_config);
       transfer_executable_to_device(config, &device_config, &active_device_drivers);
       start_cores(config, &device_config, &active_device_drivers);
@@ -54,16 +54,16 @@ static void display_device_configuration(struct device_configuration* device_con
   printf("Number of cores: %d\n", device_config->number_cores);
   printf("Clock frequency: %dMHz\n", device_config->clock_frequency_mhz);
   printf("PCIe control BAR window: %d\n", device_config->pcie_bar_ctrl_window_index);
-  printf("Memory configuration: %dMB instruction, %dMB data per core, %dKB shared data\n", device_config->instruction_space_size_mb, 
+  printf("Memory configuration: %dMB instruction, %dMB data per core, %dKB shared data\n", device_config->instruction_space_size_mb,
     device_config->per_core_data_space_mb, device_config->shared_data_space_kb);
-    
+
   bool ddr_inuse[2]={false, false};
   for (int i=0;i<device_config->number_cores;i++) {
     ddr_inuse[device_config->ddr_bank_mapping[i]]=true;
   }
-  
+
   printf("\nDDR bank 0 in use: %s, DDR bank 1 in use: %s\n", ddr_inuse[0] ? "yes" : "no", ddr_inuse[1] ? "yes" : "no");
-  
+
   for (int i=0;i<device_config->number_cores;i++) {
     printf("Core %d: DDR bank %d, base data address 0x%lx\n", i, device_config->ddr_bank_mapping[i], device_config->ddr_base_addr_mapping[i]);
   }
@@ -84,7 +84,7 @@ static void start_cores(struct launchpad_configuration * config, struct device_c
         check_device_status(active_device_drivers->device_start_core(i));
       }
     }
-  }  
+  }
 }
 
 static bool are_all_cores_active(struct launchpad_configuration * config, struct device_configuration * device_config) {
@@ -133,7 +133,7 @@ static void transfer_executable_to_device(struct launchpad_configuration * confi
       }
     }
   } else {
-    // Otherwise there is a shared instruction space    
+    // Otherwise there is a shared instruction space
     check_device_status(active_device_drivers->device_write_instructions(0x0, executable_bytes, code_size));
   }
   free(executable_bytes);
@@ -152,7 +152,7 @@ static void load_executable_file(struct launchpad_configuration * config, char *
     close(handle);
     exit(-1);
   }
-  
+
   *code_size = (uint64_t) st.st_size;
   *exec_buffer=(char*) malloc(*code_size);
   err=read(handle, *exec_buffer, *code_size);

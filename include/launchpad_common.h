@@ -21,14 +21,14 @@ struct device_configuration {
   char version;
   int * ddr_bank_mapping;
   uint64_t * ddr_base_addr_mapping;
-  unsigned int instruction_space_size_mb, per_core_data_space_mb, shared_data_space_kb;  
+  unsigned int instruction_space_size_mb, per_core_data_space_mb, shared_data_space_kb;
   enum LP_DEVICE_ARCHITECTURE_TYPE architecture_type;
 };
 
 struct device_drivers {
   LP_STATUS_CODE (*device_initialise)();
   LP_STATUS_CODE (*device_finalise)();
-  LP_STATUS_CODE (*device_reset)();  
+  LP_STATUS_CODE (*device_reset)();
   LP_STATUS_CODE (*device_get_configuration)(struct device_configuration*);
 
   LP_STATUS_CODE (*device_start_core)(int);

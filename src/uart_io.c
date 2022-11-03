@@ -25,7 +25,7 @@ void poll_for_uart_across_cores(struct launchpad_configuration * config, struct 
         output_buffer_locals[i]=0;
       }
     }
-  }  
+  }
   while(1==1) {
     for (int i=0;i<device_config->number_cores;i++) {
       if (config->active_cores[i]) {
@@ -46,16 +46,16 @@ static int get_number_active_cores(struct launchpad_configuration * config, stru
 static void poll_core_for_uart(int core_id, struct device_drivers * active_device_drivers, int num_active_cores, char ** output_buffers, unsigned int * output_buffer_locals) {
   int uart_data_present=0;
   check_device_status(active_device_drivers->device_uart_has_data(core_id, &uart_data_present));
-  if (uart_data_present) {    
+  if (uart_data_present) {
     char data=0x0;
-    check_device_status(active_device_drivers->device_read_uart(core_id, &data));    
+    check_device_status(active_device_drivers->device_read_uart(core_id, &data));
     if (num_active_cores > 1) {
       if (output_buffer_locals[core_id] < MAX_BUFFER_SIZE) {
         output_buffers[core_id][output_buffer_locals[core_id]]=data;
         output_buffer_locals[core_id]++;
         if (data == '\n') {
           // This is a flush
-          output_buffers[core_id][output_buffer_locals[core_id]]='\0';    
+          output_buffers[core_id][output_buffer_locals[core_id]]='\0';
           printf("[%d]: %s", core_id, output_buffers[core_id]);
           output_buffers[core_id][0]='\0';
           output_buffer_locals[core_id]=0;
