@@ -14,7 +14,7 @@
 #include "minotaur.h"
 #endif
 
-static void display_device_configuration(struct device_configuration*);
+static void display_device_configuration(struct device_configuration*, struct device_drivers*);
 static void process_loop(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
 static void start_cores(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
 static bool are_all_cores_active(struct launchpad_configuration*, struct device_configuration*);
@@ -22,6 +22,7 @@ static void check_number_cores_on_device_and_active(struct launchpad_configurati
 static void transfer_executable_to_device(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*);
 static void load_executable_file(struct launchpad_configuration*, char**, uint64_t*);
 static void check_device_status(LP_STATUS_CODE);
+static char* parse_seconds_to_days(uint64_t, char*);
 
 int main(int argc, char * argv[]) {
   struct launchpad_configuration * config=readConfiguration(argc, argv);
@@ -37,7 +38,7 @@ int main(int argc, char * argv[]) {
   if (config->executable_filename != NULL || config->display_config) {
     check_device_status(active_device_drivers.device_initialise());
     check_device_status(active_device_drivers.device_get_configuration(&device_config));
-    if (config->display_config) display_device_configuration(&device_config);
+    if (config->display_config) display_device_configuration(&device_config, &active_device_drivers);
     if (config->executable_filename != NULL) {
       check_number_cores_on_device_and_active(config, &device_config);
       transfer_executable_to_device(config, &device_config, &active_device_drivers);
@@ -48,7 +49,10 @@ int main(int argc, char * argv[]) {
   return 0;
 }
 
-static void display_device_configuration(struct device_configuration* device_config) {
+static void display_device_configuration(struct device_configuration* device_config, struct device_drivers * active_device_drivers) {
+  struct host_board_status board_status;
+  check_device_status(active_device_drivers->device_get_host_board_status(&board_status));
+
   printf("Device: '%s', version %x revision %d\n", device_config->device_name, device_config->version, device_config->revision);
   printf("CPU configuration: %d cores of %s\n", device_config->number_cores, device_config->cpu_name);
   if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_NOTHING) {
@@ -75,6 +79,16 @@ static void display_device_configuration(struct device_configuration* device_con
   for (int i=0;i<device_config->number_cores;i++) {
     printf("Core %d: DDR bank %d, host-side base data address 0x%lx\n", i, device_config->ddr_bank_mapping[i], device_config->ddr_base_addr_mapping[i]);
   }
+  if (board_status.board_type == LP_PA100) {
+    printf("\nHost FPGA board type is PA100, serial number %d\n", board_status.board_serial_number);
+  } else if (board_status.board_type == LP_PA101) {
+    printf("\nHost FPGA board type is PA101, serial number %d\n", board_status.board_serial_number);
+  } else {
+    printf("\nHost FPGA board type is unknown, serial number %d\n", board_status.board_serial_number);
+  }
+  printf("FPGA temperature %.2f°C, power draw %.2f Watts\n", board_status.temp, board_status.power_draw);
+  char display_buffer[512];
+  printf("FPGA has had %ld power cycles, with a total alive time of %s\n", board_status.num_power_cycles, parse_seconds_to_days(board_status.time_alive_sec, display_buffer));
 }
 
 static void process_loop(struct launchpad_configuration * config, struct device_configuration* device_config, struct device_drivers * active_device_drivers) {
@@ -178,4 +192,24 @@ static void check_device_status(LP_STATUS_CODE status_code) {
     raise(SIGABRT);
     exit(-1);
   }
+}
+
+static char* parse_seconds_to_days(uint64_t seconds, char * buffer) {
+  long int remainder=seconds;
+  int years=remainder / 31536000;
+  remainder=remainder - (years * 31536000);
+  int days=remainder / 86400;
+  remainder=remainder - (days * 86400);
+  int hours=remainder / 3600;
+  remainder=remainder - (hours * 3600);
+  int mins=remainder / 60;
+  remainder=remainder - (mins * 60);
+  if (years > 0) {
+    sprintf(buffer,"%d years, %d days, %d hours, %d min and %ld secs", years, days, hours, mins, remainder);
+  } else if (days > 0) {
+    sprintf(buffer,"%d days, %d hours, %d min and %ld secs", days, hours, mins, remainder);
+  } else {
+    sprintf(buffer,"%d hours, %d min and %ld secs", hours, mins, remainder);
+  }
+  return buffer;
 }

@@ -14,6 +14,14 @@
 #define LP_UNKNOWN_CORE 6
 
 enum LP_DEVICE_ARCHITECTURE_TYPE {LP_ARCH_TYPE_SHARED_NOTHING, LP_ARCH_TYPE_SHARED_INSTR_ONLY, LP_ARCH_TYPE_SHARED_DATA_ONLY, LP_ARCH_TYPE_SHARED_EVERYTHING};
+enum LP_HOST_BOARD_TYPE {LP_PA100, LP_PA101, LP_BOARD_UNKNOWN};
+
+struct host_board_status {
+  float temp, power_draw;
+  uint64_t time_alive_sec, num_power_cycles;
+  int board_serial_number;
+  enum LP_HOST_BOARD_TYPE board_type;
+};
 
 struct device_configuration {
   char * device_name, *cpu_name;
@@ -30,6 +38,7 @@ struct device_drivers {
   LP_STATUS_CODE (*device_finalise)();
   LP_STATUS_CODE (*device_reset)();
   LP_STATUS_CODE (*device_get_configuration)(struct device_configuration*);
+  LP_STATUS_CODE (*device_get_host_board_status)(struct host_board_status*);
 
   LP_STATUS_CODE (*device_start_core)(int);
   LP_STATUS_CODE (*device_start_allcores)();
