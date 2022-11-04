@@ -16,7 +16,7 @@
 enum LP_DEVICE_ARCHITECTURE_TYPE {LP_ARCH_TYPE_SHARED_NOTHING, LP_ARCH_TYPE_SHARED_INSTR_ONLY, LP_ARCH_TYPE_SHARED_DATA_ONLY, LP_ARCH_TYPE_SHARED_EVERYTHING};
 
 struct device_configuration {
-  char * name;
+  char * device_name, *cpu_name;
   int number_cores, clock_frequency_mhz, pcie_bar_ctrl_window_index, revision;
   char version;
   int * ddr_bank_mapping;

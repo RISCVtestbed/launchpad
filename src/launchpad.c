@@ -49,9 +49,17 @@ int main(int argc, char * argv[]) {
 }
 
 static void display_device_configuration(struct device_configuration* device_config) {
-  printf("Device name: %s\n", device_config->name);
-  printf("Version: %x, revision %d\n", device_config->version, device_config->revision);
-  printf("Number of cores: %d\n", device_config->number_cores);
+  printf("Device: '%s', version %x revision %d\n", device_config->device_name, device_config->version, device_config->revision);
+  printf("CPU configuration: %d cores of %s\n", device_config->number_cores, device_config->cpu_name);
+  if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_NOTHING) {
+    printf("Architecture type: Split instruction memory, split data memory\n");
+  } else if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_INSTR_ONLY) {
+    printf("Architecture type: Shared instruction memory, split data memory\n");
+  } else if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_DATA_ONLY) {
+    printf("Architecture type: Split instruction memory, shared data memory\n");
+  } else if (device_config->architecture_type == LP_ARCH_TYPE_SHARED_EVERYTHING) {
+    printf("Architecture type: Shared instruction memory, shared data memory\n");
+  }
   printf("Clock frequency: %dMHz\n", device_config->clock_frequency_mhz);
   printf("PCIe control BAR window: %d\n", device_config->pcie_bar_ctrl_window_index);
   printf("Memory configuration: %dMB instruction, %dMB data per core, %dKB shared data\n", device_config->instruction_space_size_mb,
@@ -65,7 +73,7 @@ static void display_device_configuration(struct device_configuration* device_con
   printf("\nDDR bank 0 in use: %s, DDR bank 1 in use: %s\n", ddr_inuse[0] ? "yes" : "no", ddr_inuse[1] ? "yes" : "no");
 
   for (int i=0;i<device_config->number_cores;i++) {
-    printf("Core %d: DDR bank %d, base data address 0x%lx\n", i, device_config->ddr_bank_mapping[i], device_config->ddr_base_addr_mapping[i]);
+    printf("Core %d: DDR bank %d, host-side base data address 0x%lx\n", i, device_config->ddr_bank_mapping[i], device_config->ddr_base_addr_mapping[i]);
   }
 }
 
