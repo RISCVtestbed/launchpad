@@ -86,7 +86,7 @@ static void display_device_configuration(struct device_configuration* device_con
   } else {
     printf("\nHost FPGA board type is unknown, serial number %d\n", board_status.board_serial_number);
   }
-  printf("FPGA temperature %.2f°C, power draw %.2f Watts\n", board_status.temp, board_status.power_draw);
+  printf("FPGA temperature %.2fC, power draw %.2f Watts\n", board_status.temp, board_status.power_draw);
   char display_buffer[512];
   printf("FPGA has had %ld power cycles, with a total alive time of %s\n", board_status.num_power_cycles, parse_seconds_to_days(board_status.time_alive_sec, display_buffer));
 }
