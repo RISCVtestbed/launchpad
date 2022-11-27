@@ -11,7 +11,7 @@
 struct launchpad_configuration {
   char * executable_filename;
   bool active_cores[MAX_NUM_CORES];
-  bool poll_uart, all_cores_active, reset, display_config;
+  bool all_cores_active, reset, display_config;
 };
 
 struct launchpad_configuration* readConfiguration(int, char*[]);

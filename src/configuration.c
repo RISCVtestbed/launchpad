@@ -17,8 +17,7 @@ static void displayHelp(void);
 struct launchpad_configuration* readConfiguration(int argc, char *argv[]) {
   int i;
   struct launchpad_configuration* configuration=(struct launchpad_configuration*) malloc(sizeof(struct launchpad_configuration));
-  configuration->executable_filename=NULL;
-  configuration->poll_uart=false;
+  configuration->executable_filename=NULL;  
   configuration->reset=false;
   configuration->display_config=false;
   configuration->all_cores_active=false;
@@ -41,9 +40,7 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
         configuration->executable_filename=argv[++i];
       } else if (areStringsEqualIgnoreCase(argv[i], "-help")) {
         displayHelp();
-        exit(0);
-      } else if (areStringsEqualIgnoreCase(argv[i], "-uart")) {
-        configuration->poll_uart=true;
+        exit(0);      
       } else if (areStringsEqualIgnoreCase(argv[i], "-reset")) {
         configuration->reset=true;
       } else if (areStringsEqualIgnoreCase(argv[i], "-config")) {
@@ -60,10 +57,7 @@ static void parseCommandLineArguments(struct launchpad_configuration* configurat
     if (configuration->executable_filename == NULL && !configuration->reset && !configuration->display_config) {
       fprintf(stderr, "You must supply an executable file, reset flag or display config flag, see -h for details\n");
       exit(0);
-    }
-    if (configuration->executable_filename != NULL && !configuration->poll_uart) {
-      printf("Warning: You have not enabled UART with -uart flag, so executable will run but no output will be generated\n");
-    }
+    }    
     if (!configuration->all_cores_active && configuration->executable_filename != NULL) {
       bool none_active=true;
       for (int i=0;i<MAX_NUM_CORES;i++) {
@@ -130,8 +124,7 @@ static void displayHelp() {
   printf("Launchpad version %s\n", VERSION_IDENT);
   printf("launchpad [arguments]\n\nArguments\n--------\n");
   printf("-bin/-exe arg  Provides the binary executable file to be loaded and executed\n");
-  printf("-c list        Specify active cores; can be a single id, all, a range (a:b) or a list (a,b,c,d)\n");
-  printf("-uart          Poll UART for output after starting code on core(s)\n");
+  printf("-c list        Specify active cores; can be a single id, all, a range (a:b) or a list (a,b,c,d)\n");  
   printf("-reset         Reset device\n");
   printf("-config        Display configuration information\n");
   printf("-help          Display this help and quit\n");

@@ -15,6 +15,7 @@
 
 enum LP_DEVICE_ARCHITECTURE_TYPE {LP_ARCH_TYPE_SHARED_NOTHING, LP_ARCH_TYPE_SHARED_INSTR_ONLY, LP_ARCH_TYPE_SHARED_DATA_ONLY, LP_ARCH_TYPE_SHARED_EVERYTHING};
 enum LP_HOST_BOARD_TYPE {LP_PA100, LP_PA101, LP_BOARD_UNKNOWN};
+enum LP_DEVICE_COMM_TYPE {LP_DEVICE_COMM_UART};
 
 struct host_board_status {
   float temp, power_draw;
@@ -31,6 +32,7 @@ struct device_configuration {
   uint64_t * ddr_base_addr_mapping;
   unsigned int instruction_space_size_mb, per_core_data_space_mb, shared_data_space_kb;
   enum LP_DEVICE_ARCHITECTURE_TYPE architecture_type;
+  enum LP_DEVICE_COMM_TYPE communication_type;
 };
 
 struct device_drivers {

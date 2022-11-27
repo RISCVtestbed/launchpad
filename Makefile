@@ -1,7 +1,7 @@
 
 CC=gcc
 CFLAGS=-g -Iinclude
-LFLAGS=
+LFLAGS=-lncurses -lpthread
 
 EXE_FILE=launchpad
 

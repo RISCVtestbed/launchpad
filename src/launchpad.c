@@ -8,7 +8,7 @@
 #include <signal.h>
 #include "launchpad_common.h"
 #include "configuration.h"
-#include "uart_io.h"
+#include "uart_interactive.h"
 
 #ifdef MINOTAUR_SUPPORT
 #include "minotaur.h"
@@ -92,8 +92,8 @@ static void display_device_configuration(struct device_configuration* device_con
 }
 
 static void process_loop(struct launchpad_configuration * config, struct device_configuration* device_config, struct device_drivers * active_device_drivers) {
-  if (config->poll_uart) {
-    poll_for_uart_across_cores(config, device_config, active_device_drivers);
+  if (device_config->communication_type == LP_DEVICE_COMM_UART) {
+    interactive_uart(config, device_config, active_device_drivers);
   }
 }
 
