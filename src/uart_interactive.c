@@ -28,6 +28,7 @@ static void write_uart_data(struct launchpad_configuration*, struct device_confi
 static int get_number_active_cores(struct launchpad_configuration*, struct device_configuration*);
 static void poll_core_for_uart(int core_id, struct device_drivers*, int, char**, unsigned int*, char *, unsigned int*);
 static enum handle_command_status handle_command(struct launchpad_configuration*, struct device_configuration*, struct device_drivers*, struct current_device_status*, char*);
+static void display_config(struct device_configuration*, struct device_drivers*);
 static enum handle_command_status handle_disable_cores(struct launchpad_configuration*, struct device_configuration*, struct current_device_status*, char*);
 static enum handle_command_status handle_enable_specify_executable(struct launchpad_configuration*, struct current_device_status*, char*);
 static enum handle_command_status handle_enable_cores(struct launchpad_configuration*, struct device_configuration*, struct current_device_status*, char*, bool);
@@ -256,6 +257,9 @@ static enum handle_command_status handle_command(struct launchpad_configuration 
   } else if (strcmp(buffer, ":status")==0) {
     display_status_screen(config, device_config, device_status);
     return COMMAND_SUCCESS;
+  } else if (strcmp(buffer, ":config")==0) {
+    display_config(device_config, active_device_drivers);
+    return COMMAND_SUCCESS;
   } else if (strcmp(buffer, ":reset")==0) {
     reset_device(active_device_drivers, device_config, device_status);
     return COMMAND_SUCCESS;
@@ -273,6 +277,20 @@ static enum handle_command_status handle_command(struct launchpad_configuration 
     return handle_enable_specify_executable(config, device_status, buffer);
   }
   return COMMAND_NOT_RECOGNISED;
+}
+
+static void display_config(struct device_configuration * device_config, struct device_drivers * active_device_drivers) {
+  char * config_str=(char*) malloc(sizeof(char) * CONFIGURATION_STR_SIZE);
+  generate_device_configuration(device_config, active_device_drivers, config_str);
+  int row, col;
+  getyx(stdscr, row, col);
+  move(main_screen_row+(main_screen_col == 0 ? 0 : 1), 0);
+  printw("%s", config_str);
+  free(config_str);
+  refresh();
+  getyx(stdscr, main_screen_row, main_screen_col);
+  main_screen_col=0;
+  move(row, col);
 }
 
 static enum handle_command_status handle_enable_specify_executable(struct launchpad_configuration * config, struct current_device_status * device_status, char * buffer) {
@@ -464,6 +482,7 @@ static void display_help_screen() {
   printw("--------------------------\n");
   printw("Escape key to enter command mode, the following commands apply:\n");
   printw(":status      - Display current soft core status including active and enabled cores\n");
+  printw(":config      - Display soft core CPU and board configuration and status\n");
   printw(":clear       - Clears the output screen\n");
   printw(":stop        - Stop all cores\n");
   printw(":start       - Start all enabled cores\n");
