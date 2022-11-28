@@ -86,7 +86,7 @@ static void display_device_configuration(struct device_configuration* device_con
   printf("FPGA has had %ld power cycles, with a total alive time of %s\n", board_status.num_power_cycles, parse_seconds_to_days(board_status.time_alive_sec, display_buffer));
 }
 
-static void process_loop(struct launchpad_configuration * config, struct device_configuration* device_config, 
+static void process_loop(struct launchpad_configuration * config, struct device_configuration* device_config,
         struct device_drivers * active_device_drivers, struct current_device_status * device_status) {
   if (device_config->communication_type == LP_DEVICE_COMM_UART) {
     interactive_uart(config, device_config, active_device_drivers, device_status);

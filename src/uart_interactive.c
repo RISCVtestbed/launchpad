@@ -49,19 +49,19 @@ struct ThreadArgsStruct {
   struct device_drivers * active_device_drivers;
 };
 
-void interactive_uart(struct launchpad_configuration * config, struct device_configuration * device_config, 
+void interactive_uart(struct launchpad_configuration * config, struct device_configuration * device_config,
       struct device_drivers * active_device_drivers, struct current_device_status * device_status) {
   struct ThreadArgsStruct * threadArgs=(struct ThreadArgsStruct*) malloc(sizeof(struct ThreadArgsStruct));
   threadArgs->config=config;
   threadArgs->device_config=device_config;
   threadArgs->active_device_drivers=active_device_drivers;
-  
+
   sem_init(&device_semaphore, 0, 1);
-  
+
   screenUpdateOk=true;
   continuePoll=true;
   killBufferedOutput=false;
-  
+
   // Initialise ncurses
   initscr();
   //newterm(NULL, stderr, stdin);
@@ -74,20 +74,20 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
 
   init_pair(1, COLOR_WHITE, COLOR_RED);
   init_pair(2, COLOR_BLUE, COLOR_GREEN);
-  
-  pthread_t threadId;    
+
+  pthread_t threadId;
   int err = pthread_create(&threadId, NULL, &poll_uart_thread, threadArgs);
   if (err) {
-    fprintf(stderr, "Error calling device function\n");    
+    fprintf(stderr, "Error calling device function\n");
     raise(SIGABRT);
     exit(-1);
   }
-  
+
   char command_buffer[50];
   bool escapeMode=false;
   int x_pos;
-  while(1==1) {        
-    char ch=getch();    
+  while(1==1) {
+    char ch=getch();
     if (ch != ERR) {
       if (ch == 27 && !escapeMode) {
         screenUpdateOk=false;
@@ -97,14 +97,14 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
         move(LINES-1, 0);
         deleteln();
       } else if (ch == 27) {
-        // Ignore, just an extra escape     
+        // Ignore, just an extra escape
       } else if (escapeMode && ch == '\n') {
         escapeMode=false;
         enum handle_command_status command_status=COMMAND_IGNORE;
         if (x_pos > 0) {
           command_buffer[x_pos]='\0';
           command_status=handle_command(config, device_config, active_device_drivers, device_status, command_buffer);
-          if (command_status == COMMAND_NOT_RECOGNISED) {            
+          if (command_status == COMMAND_NOT_RECOGNISED) {
             display_command_error_message("Command not recognised");
           } else if (command_status == COMMAND_SUCCESS) {
             deleteln();
@@ -121,9 +121,9 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
         int my_row, my_col;
         getyx(stdscr, my_row, my_col);
         mvprintw(my_row, my_col-1, " ");
-        move(my_row, my_col-1);        
+        move(my_row, my_col-1);
         x_pos--;
-      } else {        
+      } else {
         printw("%c", ch);
         refresh();
         if (escapeMode) {
@@ -132,7 +132,7 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
         } else {
           // If not in escape mode then write the character to UART
           write_uart_data(config, device_config, active_device_drivers, ch);
-        }        
+        }
       }
     }
   }
@@ -141,7 +141,7 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
 
 void * poll_uart_thread(void * args) {
   struct ThreadArgsStruct * threadArgs = (struct ThreadArgsStruct*) args;
-  
+
   int num_active_cores=get_number_active_cores(threadArgs->config, threadArgs->device_config);
   char ** output_buffers=NULL;
   unsigned int * output_buffer_locals=NULL;
@@ -155,16 +155,16 @@ void * poll_uart_thread(void * args) {
         output_buffer_locals[i]=0;
       }
     }
-  }  
-  
+  }
+
   char * out_paused_buffer=(char*) malloc(sizeof(char*) * OUT_PAUSED_BUFFER_SIZE);
   unsigned int out_paused_buffer_idx=0;
-  while (1==1) {    
+  while (1==1) {
     for (int i=0;i<threadArgs->device_config->number_cores;i++) {
       if (threadArgs->config->active_cores[i]) {
         poll_core_for_uart(i, threadArgs->active_device_drivers, num_active_cores, output_buffers, output_buffer_locals, out_paused_buffer, &out_paused_buffer_idx);
       }
-    }    
+    }
   }
   return NULL;
 }
@@ -196,16 +196,16 @@ static void poll_core_for_uart(int core_id, struct device_drivers * active_devic
     *out_paused_buffer_idx=0;
   }
   if (!continuePoll) return;
-  int uart_data_present=0;  
-  sem_wait(&device_semaphore);  
-  check_device_status(active_device_drivers->device_uart_has_data(core_id, &uart_data_present));  
-  if (uart_data_present) {    
+  int uart_data_present=0;
+  sem_wait(&device_semaphore);
+  check_device_status(active_device_drivers->device_uart_has_data(core_id, &uart_data_present));
+  if (uart_data_present) {
     char data=0x0;
     check_device_status(active_device_drivers->device_read_uart(core_id, &data));
     sem_post(&device_semaphore);
     if (num_active_cores > 1) {
       if (output_buffer_locals[core_id] < MAX_BUFFER_SIZE) {
-        if (data != '\r') {      
+        if (data != '\r') {
           output_buffers[core_id][output_buffer_locals[core_id]]=data;
           output_buffer_locals[core_id]++;
         }
@@ -225,23 +225,23 @@ static void poll_core_for_uart(int core_id, struct device_drivers * active_devic
       } else {
         printf("Warning, UART buffer length of %d bytes exceeded for core %d, ignoring data '%c'\n", MAX_BUFFER_SIZE, core_id, data);
       }
-    } else {      
+    } else {
       if (data != '\r') {
-        if (screenUpdateOk) {          
+        if (screenUpdateOk) {
           printw("%c", data);
           refresh();
         } else {
           out_paused_buffer[*out_paused_buffer_idx]=data;
-          (*out_paused_buffer_idx)++;          
+          (*out_paused_buffer_idx)++;
         }
-      }      
+      }
     }
   } else {
     sem_post(&device_semaphore);
   }
 }
 
-static enum handle_command_status handle_command(struct launchpad_configuration * config, struct device_configuration * device_config, 
+static enum handle_command_status handle_command(struct launchpad_configuration * config, struct device_configuration * device_config,
         struct device_drivers * active_device_drivers, struct current_device_status * device_status, char * buffer) {
   if (strcmp(buffer, ":q")==0 || strcmp(buffer, ":quit")==0) {
     endwin();
@@ -260,28 +260,28 @@ static enum handle_command_status handle_command(struct launchpad_configuration 
     reset_device(active_device_drivers, device_config, device_status);
     return COMMAND_SUCCESS;
   } else if (strcmp(buffer, ":stop")==0) {
-    return handle_stop_cores(active_device_drivers, device_config, device_status);      
+    return handle_stop_cores(active_device_drivers, device_config, device_status);
   } else if (strcmp(buffer, ":start")==0) {
-    return handle_start_cores(config, device_config, active_device_drivers, device_status);      
+    return handle_start_cores(config, device_config, active_device_drivers, device_status);
   } else if (check_command_portion(buffer, ":e") || check_command_portion(buffer, ":enable")) {
-    return handle_enable_cores(config, device_config, device_status, buffer, true);      
+    return handle_enable_cores(config, device_config, device_status, buffer, true);
   } else if (check_command_portion(buffer, ":c") || check_command_portion(buffer, ":cores")) {
-    return handle_enable_cores(config, device_config, device_status, buffer, false);      
+    return handle_enable_cores(config, device_config, device_status, buffer, false);
   } else if (check_command_portion(buffer, ":d") || check_command_portion(buffer, ":disable")) {
-    return handle_disable_cores(config, device_config, device_status, buffer);      
-  } else if (check_command_portion(buffer, ":bin") || check_command_portion(buffer, ":exe")) {    
-    return handle_enable_specify_executable(config, device_status, buffer);    
+    return handle_disable_cores(config, device_config, device_status, buffer);
+  } else if (check_command_portion(buffer, ":bin") || check_command_portion(buffer, ":exe")) {
+    return handle_enable_specify_executable(config, device_status, buffer);
   }
   return COMMAND_NOT_RECOGNISED;
 }
 
 static enum handle_command_status handle_enable_specify_executable(struct launchpad_configuration * config, struct current_device_status * device_status, char * buffer) {
-  if (device_status->running) {    
+  if (device_status->running) {
     display_command_error_message("Can only change executable in a stopped state, stop running cores first");
     return COMMAND_ERROR;
   }
   char * args=get_arg_portion(buffer);
-  if (args == NULL) {    
+  if (args == NULL) {
     display_command_error_message("Must provide arguments with enable or core command");
     return COMMAND_ERROR;
   } else {
@@ -293,21 +293,21 @@ static enum handle_command_status handle_enable_specify_executable(struct launch
       sprintf(message, "Successfully changed executable to '%s'", config->executable_filename);
       display_message(message);
       return COMMAND_SUCCESS;
-    } else {      
+    } else {
       display_command_error_message("Specified file does not exist");
       return COMMAND_ERROR;
-    }    
-  }  
+    }
+  }
 }
 
-static enum handle_command_status handle_disable_cores(struct launchpad_configuration * config, struct device_configuration * device_config, 
+static enum handle_command_status handle_disable_cores(struct launchpad_configuration * config, struct device_configuration * device_config,
       struct current_device_status * device_status, char * buffer) {
-  if (device_status->running) {    
+  if (device_status->running) {
     display_command_error_message("Can only change active cores in a stopped state, stop running cores first");
     return COMMAND_ERROR;
   }
   char * args=get_arg_portion(buffer);
-  if (args == NULL) {    
+  if (args == NULL) {
     display_command_error_message("Must provide arguments with enable or core command");
     return COMMAND_ERROR;
   } else {
@@ -332,7 +332,7 @@ static enum handle_command_status handle_disable_cores(struct launchpad_configur
   }
 }
 
-static enum handle_command_status handle_enable_cores(struct launchpad_configuration * config, struct device_configuration * device_config, 
+static enum handle_command_status handle_enable_cores(struct launchpad_configuration * config, struct device_configuration * device_config,
       struct current_device_status * device_status, char * buffer, bool additive) {
   if (device_status->running) {
     display_command_error_message("Can only change active cores in a stopped state, stop running cores first");
@@ -342,7 +342,7 @@ static enum handle_command_status handle_enable_cores(struct launchpad_configura
   if (args == NULL) {
     display_command_error_message("Must provide arguments with enable or core command");
     return COMMAND_ERROR;
-  } else {    
+  } else {
     bool activeCorePrev[device_config->number_cores];
     if (additive) {
       memcpy(activeCorePrev, config->active_cores, sizeof(bool) * device_config->number_cores);
@@ -362,41 +362,41 @@ static enum handle_command_status handle_enable_cores(struct launchpad_configura
   }
 }
 
-static int check_enabled_cores(struct launchpad_configuration * config, struct device_configuration * device_config) {  
+static int check_enabled_cores(struct launchpad_configuration * config, struct device_configuration * device_config) {
   for (int i=device_config->number_cores;i<MAX_NUM_CORES;i++) {
     if (config->active_cores[i]) {
       char message[100];
       sprintf(message, "Core %d enabled but the device only has %d cores, will be ignored", i, device_config->number_cores);
-      display_message(message);      
+      display_message(message);
     }
   }
-  
+
   return get_num_active_cores(config, device_config);
 }
 
 static int get_num_active_cores(struct launchpad_configuration * config, struct device_configuration * device_config) {
   int num_active_cores=0;
   for (int i=0;i<device_config->number_cores;i++) {
-    if (config->active_cores[i]) {      
+    if (config->active_cores[i]) {
       num_active_cores++;
     }
   }
   return num_active_cores;
 }
 
-static enum handle_command_status handle_start_cores(struct launchpad_configuration * config, struct device_configuration * device_config, 
+static enum handle_command_status handle_start_cores(struct launchpad_configuration * config, struct device_configuration * device_config,
       struct device_drivers * active_device_drivers, struct current_device_status * device_status) {
   if (device_status->running) {
     display_command_error_message("Cores are already running");
     return COMMAND_ERROR;
   }
   int num_enabled_cores=get_num_active_cores(config, device_config);
-  if (num_enabled_cores == 0) {    
+  if (num_enabled_cores == 0) {
     display_command_error_message("No cores are enabled, enable at-least one before starting");
     return COMMAND_ERROR;
   }
   killBufferedOutput=false;
-  sem_wait(&device_semaphore);  
+  sem_wait(&device_semaphore);
   transfer_executable_to_device(config, device_config, active_device_drivers);
   int num_started=start_cores(config, device_config, active_device_drivers, device_status);
   continuePoll=true;
@@ -447,7 +447,7 @@ static void reset_device(struct device_drivers * active_device_drivers, struct d
 
 static void display_message(char * message) {
   int row, col;
-  getyx(stdscr, row, col);  
+  getyx(stdscr, row, col);
   move(main_screen_row+(main_screen_col == 0 ? 0 : 1), 0);
   printw("Launchpad> %s\n", message);
   refresh();
@@ -493,7 +493,7 @@ static void display_status_screen(struct launchpad_configuration * config, struc
     printw("Soft cores currently stopped");
   }
   for (int i=0;i<device_config->number_cores;i++) {
-    printw("Core %d: %s (%s)\n", i, device_status->cores_active[i] ? "active" : "inactive", config->active_cores[i] ? "enabled" : "disabled");    
+    printw("Core %d: %s (%s)\n", i, device_status->cores_active[i] ? "active" : "inactive", config->active_cores[i] ? "enabled" : "disabled");
   }
   printw("Executable: %s\n", config->executable_filename);
   refresh();

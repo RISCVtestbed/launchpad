@@ -55,7 +55,7 @@ static void load_executable_file(struct launchpad_configuration * config, char *
   close(handle);
 }
 
-int start_cores(struct launchpad_configuration * config, struct device_configuration * device_config, 
+int start_cores(struct launchpad_configuration * config, struct device_configuration * device_config,
                           struct device_drivers * active_device_drivers, struct current_device_status * device_status) {
   if (are_all_cores_active(config, device_config)) {
     check_device_status(active_device_drivers->device_start_allcores());
