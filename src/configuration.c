@@ -29,46 +29,24 @@ struct launchpad_configuration* readConfiguration(int argc, char *argv[]) {
  * Parses command line arguments
  */
 static void parseCommandLineArguments(struct launchpad_configuration* configuration, int argc, char *argv[]) {
-  if (argc == 1) {
-    displayHelp();
-    exit(0);
-  } else {
-    int i;
-    for (i=1;i<argc;i++) {
-      if (areStringsEqualIgnoreCase(argv[i], "-bin") || areStringsEqualIgnoreCase(argv[i], "-exe")) {
-        configuration->executable_filename=(char*) malloc(sizeof(char) * strlen(argv[++i])+1);
-        strcpy(configuration->executable_filename, argv[i]);
-      } else if (areStringsEqualIgnoreCase(argv[i], "-help")) {
-        displayHelp();
-        exit(0);
-      } else if (areStringsEqualIgnoreCase(argv[i], "-reset")) {
-        configuration->reset=true;
-      } else if (areStringsEqualIgnoreCase(argv[i], "-config")) {
-        configuration->display_config=true;
-      } else if (areStringsEqualIgnoreCase(argv[i], "-c")) {
-        if (i+1 ==argc) {
-          fprintf(stderr, "When specifying active cores you must provide arguments\n");
-          exit(0);
-        } else {
-          parseCoreActiveInfo(configuration, argv[++i]);
-        }
-      }
-    }
-    if (configuration->executable_filename == NULL && !configuration->reset && !configuration->display_config) {
-      fprintf(stderr, "You must supply an executable file, reset flag or display config flag, see -h for details\n");
+  int i;
+  for (i=1;i<argc;i++) {
+    if (areStringsEqualIgnoreCase(argv[i], "-bin") || areStringsEqualIgnoreCase(argv[i], "-exe")) {
+      configuration->executable_filename=(char*) malloc(sizeof(char) * strlen(argv[++i])+1);
+      strcpy(configuration->executable_filename, argv[i]);
+    } else if (areStringsEqualIgnoreCase(argv[i], "-help")) {
+      displayHelp();
       exit(0);
-    }
-    if (!configuration->all_cores_active && configuration->executable_filename != NULL) {
-      bool none_active=true;
-      for (int i=0;i<MAX_NUM_CORES;i++) {
-        if (configuration->active_cores[i]) {
-          none_active=false;
-          break;
-        }
-      }
-      if (none_active) {
-        fprintf(stderr, "No cores configured to be active, you must specify at-least one core with the -c argument\n");
+    } else if (areStringsEqualIgnoreCase(argv[i], "-reset")) {
+      configuration->reset=true;
+    } else if (areStringsEqualIgnoreCase(argv[i], "-config")) {
+      configuration->display_config=true;
+    } else if (areStringsEqualIgnoreCase(argv[i], "-c")) {
+      if (i+1 ==argc) {
+        fprintf(stderr, "When specifying active cores you must provide arguments\n");
         exit(0);
+      } else {
+        parseCoreActiveInfo(configuration, argv[++i]);
       }
     }
   }
