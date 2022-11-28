@@ -15,5 +15,7 @@ struct launchpad_configuration {
 };
 
 struct launchpad_configuration* readConfiguration(int, char*[]);
+void parseCoreActiveInfo(struct launchpad_configuration*, char*);
+void parseCoreInfoString(char*, bool*, int);
 
 #endif
