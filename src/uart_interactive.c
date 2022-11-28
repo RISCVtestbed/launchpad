@@ -29,15 +29,7 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
   threadArgs->device_config=device_config;
   threadArgs->active_device_drivers=active_device_drivers;
   
-  pthread_t threadId;    
-  int err = pthread_create(&threadId, NULL, &poll_uart_thread, threadArgs);
-  if (err) {
-    fprintf(stderr, "Error calling device function\n");    
-    raise(SIGABRT);
-    exit(-1);
-  }
-  
-    // Initialise ncurses
+  // Initialise ncurses
   initscr();
   cbreak();
   noecho();
@@ -47,6 +39,14 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
   start_color();
 
   init_pair(1, COLOR_WHITE, COLOR_RED);
+  
+  pthread_t threadId;    
+  int err = pthread_create(&threadId, NULL, &poll_uart_thread, threadArgs);
+  if (err) {
+    fprintf(stderr, "Error calling device function\n");    
+    raise(SIGABRT);
+    exit(-1);
+  }
   
   char command_buffer[50];
   bool escapeMode=false;
