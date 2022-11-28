@@ -75,6 +75,13 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
 
   init_pair(1, COLOR_WHITE, COLOR_RED);
   init_pair(2, COLOR_BLUE, COLOR_GREEN);
+  init_pair(3, COLOR_GREEN, -1);
+  
+  attron(COLOR_PAIR(3));
+  if (!device_status->running) printw("Launchpad> Launchpad started but cores idle, use ':h' command for help\n");
+  if (config->executable_filename == NULL) printw("Launchpad> No executable specified, provide one via the ':exe' command\n");
+  if (get_num_active_cores(config, device_config) == 0) printw("Launchpad> No cores enabled, enable these via the ':e' or ':c' commands\n");
+  attroff(COLOR_PAIR(3));
 
   pthread_t threadId;
   int err = pthread_create(&threadId, NULL, &poll_uart_thread, threadArgs);
@@ -417,6 +424,10 @@ static enum handle_command_status handle_start_cores(struct launchpad_configurat
     display_command_error_message("No cores are enabled, enable at-least one before starting");
     return COMMAND_ERROR;
   }
+  if (config->executable_filename == NULL) {
+    display_command_error_message("No executable file has been specified, you must provide this to start the cores");
+    return COMMAND_ERROR;
+  }
   killBufferedOutput=false;
   sem_wait(&device_semaphore);
   transfer_executable_to_device(config, device_config, active_device_drivers);
@@ -440,7 +451,7 @@ static enum handle_command_status handle_stop_cores(struct device_drivers * acti
   sem_post(&device_semaphore);
   for (int i=0;i<device_config->number_cores;i++) device_status->cores_active[i]=false;
   device_status->running=false;
-  display_message("All cores stopped and now idle");
+  display_message("All cores stopped and idle");
   killBufferedOutput=true;
   return COMMAND_SUCCESS;
 }
@@ -471,7 +482,9 @@ static void display_message(char * message) {
   int row, col;
   getyx(stdscr, row, col);
   move(main_screen_row+(main_screen_col == 0 ? 0 : 1), 0);
+  attron(COLOR_PAIR(3));
   printw("Launchpad> %s\n", message);
+  attroff(COLOR_PAIR(3));
   refresh();
   getyx(stdscr, main_screen_row, main_screen_col);
   main_screen_col=0;
