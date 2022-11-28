@@ -78,9 +78,13 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
   init_pair(3, COLOR_GREEN, -1);
   
   attron(COLOR_PAIR(3));
-  if (!device_status->running) printw("Launchpad> Launchpad started but cores idle, use ':h' command for help\n");
-  if (config->executable_filename == NULL) printw("Launchpad> No executable specified, provide one via the ':exe' command\n");
-  if (get_num_active_cores(config, device_config) == 0) printw("Launchpad> No cores enabled, enable these via the ':e' or ':c' commands\n");
+  if (!device_status->running) {
+    printw("Launchpad> Launchpad started but cores idle, use ':h' command for help\n");
+    if (config->executable_filename == NULL) printw("Launchpad> No executable specified, provide one via the ':exe' command\n");
+    if (get_num_active_cores(config, device_config) == 0) printw("Launchpad> No cores enabled, enable these via the ':e' or ':c' commands\n");
+  } else {
+    printw("Launchpad> %d cores running with executable '%s'\n", get_num_active_cores(config, device_config), config->executable_filename);
+  }
   attroff(COLOR_PAIR(3));
 
   pthread_t threadId;
