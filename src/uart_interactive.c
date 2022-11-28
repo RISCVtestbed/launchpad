@@ -97,6 +97,8 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
         getyx(stdscr, main_screen_row, main_screen_col);
         move(LINES-1, 0);
         deleteln();
+        printw("> ");
+        refresh();
       } else if (ch == 27) {
         // Ignore, just an extra escape
       } else if (escapeMode && ch == '\n') {
@@ -121,9 +123,11 @@ void interactive_uart(struct launchpad_configuration * config, struct device_con
         // Handle backspace for escape mode command
         int my_row, my_col;
         getyx(stdscr, my_row, my_col);
-        mvprintw(my_row, my_col-1, " ");
-        move(my_row, my_col-1);
-        x_pos--;
+        if (my_col > 2) {
+          mvprintw(my_row, my_col-1, " ");
+          move(my_row, my_col-1);
+          x_pos--;
+        }
       } else {
         printw("%c", ch);
         refresh();
